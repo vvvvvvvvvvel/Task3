@@ -61,13 +61,20 @@ public class DefaultEmissionStrategy : IEmissionStrategy
         double totalRating = users.Sum(u => u.Rating);
         var reward = users.Select(u => u.Rating / totalRating * amount).ToArray();
         var count = 0;
-        while (count < reward.Length && ((int) reward[count] == 0 || (count = GetMaxFractionalIndex(reward)) != -1))
+        while (count < reward.Length && ((count = GetMaxFractionalIndex(reward)) != -1) || (count = Array.IndexOf(reward, 0)) !=-1)
         {
             var minFractionalIndex = GetMinFractionalIndex(reward, count);
             if (minFractionalIndex == -1)
             {
                 reward[count] += 1;
-                reward[^1] -= 1;
+                for (var i = reward.Length - 1; i > -1; i--)
+                {
+                    if (reward[i] > 1)
+                    {
+                        reward[i] -= 1;
+                        break;
+                    }
+                }
                 count++;
             }
             else
@@ -78,6 +85,10 @@ public class DefaultEmissionStrategy : IEmissionStrategy
                 if (isInt)
                 {
                     count++;
+                }
+                if (reward[minFractionalIndex] == 0 && minFractionalIndex < count)
+                {
+                    count = minFractionalIndex;
                 }
             }
         }
