@@ -1,0 +1,42 @@
+FROM mcr.microsoft.com/dotnet/sdk:6.0 as build
+
+
+WORKDIR /src
+COPY /BillingGrpcServer/BillingGrpcServer.csproj /src/BillingGrpcServer/BillingGrpcServer.csproj
+COPY /Local/Local.csproj /src/Local/Local.csproj
+COPY /Shared/Shared.csproj /src/Shared/Shared.csproj
+
+
+RUN dotnet restore "Shared/Shared.csproj"
+RUN dotnet restore "Local/Local.csproj"
+RUN dotnet remove "BillingGrpcServer/BillingGrpcServer.csproj" reference "..\DbPostgres\DbPostgres.csproj"
+RUN dotnet remove "BillingGrpcServer/BillingGrpcServer.csproj" reference "..\DbPostgresMigrator\DbPostgresMigrator.csproj"
+RUN dotnet restore "BillingGrpcServer/BillingGrpcServer.csproj"
+
+
+COPY BillingGrpcServer BillingGrpcServer
+COPY Shared Shared
+COPY Local Local
+
+WORKDIR /src/BillingGrpcServer
+RUN dotnet remove "BillingGrpcServer.csproj" reference "..\DbPostgres\DbPostgres.csproj"
+RUN dotnet remove "BillingGrpcServer.csproj" reference "..\DbPostgresMigrator\DbPostgresMigrator.csproj"
+RUN dotnet build /p:DefineConstants=LOCALBUILD "BillingGrpcServer.csproj" -c Release -o /app/build
+
+FROM build as publish
+RUN dotnet publish /p:DefineConstants=LOCALBUILD "BillingGrpcServer.csproj" -c Release -o /app/publish
+
+FROM mcr.microsoft.com/dotnet/aspnet:6.0 as runtime
+
+WORKDIR /app
+
+EXPOSE 5238
+
+FROM runtime as final
+
+WORKDIR /app
+
+ARG LogLevel=Information
+ENV Logging__LogLevel__Microsoft $LogLevel
+COPY --from=publish /app/publish .
+ENTRYPOINT ["dotnet", "BillingGrpcServer.dll"]

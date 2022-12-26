@@ -1,0 +1,29 @@
+version: "3.7"
+services:
+  billing-grpc:
+    build:
+      context: .
+      dockerfile: ./DockerfileGrpcServerWithoutDb
+      args:
+        LogLevel: Error
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "5238:80"
+    environment:
+      DatabaseConnectionOptions__ConnectionString: "Host=host.docker.internal; Port=5444; Database=billing; Username=postgres; Password=mylittlepassword;"
+
+  billing-api:
+    build:
+      context: .
+      dockerfile: ./DockerfileAPIServer
+      args:
+        LogLevel: Error
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "5023:80"
+    depends_on:
+      - "billing-grpc"
+    environment:
+      BackendUrl: "http://host.docker.internal:5232"

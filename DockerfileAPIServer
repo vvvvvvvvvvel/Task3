@@ -1,0 +1,32 @@
+FROM mcr.microsoft.com/dotnet/sdk:6.0 as build
+
+
+WORKDIR /src
+COPY /BillingAPI/BillingAPI.csproj /src/BillingAPI/BillingAPI.csproj
+
+
+RUN dotnet restore "BillingAPI/BillingAPI.csproj"
+
+
+COPY BillingAPI BillingAPI
+
+WORKDIR /src/BillingAPI
+RUN dotnet build "BillingAPI.csproj" -c Release -o /app/build
+
+FROM build as publish
+RUN dotnet publish "BillingAPI.csproj" -c Release -o /app/publish
+
+FROM mcr.microsoft.com/dotnet/aspnet:6.0 as runtime
+
+WORKDIR /app
+
+EXPOSE 5023
+
+FROM runtime as final
+
+WORKDIR /app
+
+ARG LogLevel=Information
+ENV Logging__LogLevel__Microsoft $LogLevel
+COPY --from=publish /app/publish .
+ENTRYPOINT ["dotnet", "BillingAPI.dll"]

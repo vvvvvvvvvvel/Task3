@@ -1,0 +1,43 @@
+version: "3.7"
+services:
+  billing-grpc:
+    build:
+      context: .
+      dockerfile: ./DockerfileGrpcServer
+      args:
+        LogLevel: Information
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "5238:80"
+    depends_on:
+      - "billing-db"
+    environment:
+      DatabaseConnectionOptions__ConnectionString: "Host=host.docker.internal; Port=5444; Database=billing; Username=postgres; Password=mylittlepassword;"
+
+  billing-api:
+    build:
+      context: .
+      dockerfile: ./DockerfileAPIServer
+      args:
+        LogLevel: Information
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "5023:80"
+    depends_on:
+      - "billing-grpc"
+    environment:
+      BackendUrl: "http://host.docker.internal:5238"
+
+  billing-db:
+    image: postgres:latest
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "5444:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: mylittlepassword
+      POSTGRES_DB: billing
+#    command: "-c log_statement=all"
