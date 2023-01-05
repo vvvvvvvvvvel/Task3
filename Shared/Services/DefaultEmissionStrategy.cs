@@ -32,7 +32,7 @@ public class DefaultEmissionStrategy<TUsers> : IEmissionStrategy<TUsers> where T
             }
             else
             {
-                reward[count] += reward[minFractionalIndex] - (int) reward[minFractionalIndex];
+                reward[count] += reward[minFractionalIndex] % 1;
                 reward[minFractionalIndex] = (int) reward[minFractionalIndex];
                 TryCorrectionDouble(ref reward[count]);
             }
@@ -47,7 +47,7 @@ public class DefaultEmissionStrategy<TUsers> : IEmissionStrategy<TUsers> where T
         var minFractionalIndex = -1;
         for (var i = 0; i < numbers.Length; i++)
         {
-            var fractionalPart = numbers[i] - (int) numbers[i];
+            var fractionalPart = numbers[i] % 1;
             if (!(fractionalPart < minFractional) || fractionalPart == 0 || skipIndex == i) continue;
 
             minFractional = fractionalPart;
@@ -63,7 +63,7 @@ public class DefaultEmissionStrategy<TUsers> : IEmissionStrategy<TUsers> where T
         var maxFractionalIndex = -1;
         for (var i = 0; i < numbers.Length; i++)
         {
-            var fractionalPart = numbers[i] - (int) numbers[i];
+            var fractionalPart = numbers[i] % 1;
             if (!(fractionalPart > maxFractional) || fractionalPart == 0 || skipIndex == i) continue;
 
             maxFractional = fractionalPart;
